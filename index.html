@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}</style>
+<title>The 51st Floor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital@1&display=swap">
+<style>
+/* Layout: stair-sign header, results strip, then formula + controls (left) beside a sticky live stairwell cross-section (right); two charts; notes */
+:root{
+  --bg:#ECEBE6;
+  --surface:#F8F7F3;
+  --ink:#1C2220;
+  --muted:#5B6460;
+  --rule:#D2D0C8;
+  --exit:#BF341E;
+  --flow:#2B7652;
+  --wait:#B5670F;
+  --f-display:"Barlow Condensed","Arial Narrow","Helvetica Neue",sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --f-math:"STIX Two Text","Cambria Math","Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121614; --surface:#1A201D; --ink:#E3E7E1; --muted:#97A19C; --rule:#2D3532;
+    --exit:#EF6B50; --flow:#AEDF84; --wait:#E8A54A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121614; --surface:#1A201D; --ink:#E3E7E1; --muted:#97A19C; --rule:#2D3532;
+  --exit:#EF6B50; --flow:#AEDF84; --wait:#E8A54A;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding-block:36px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:44px}
+p{margin:0}
+a{color:inherit;text-decoration-color:var(--exit);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--exit);outline-offset:2px}
+var{font-family:var(--f-math);font-style:italic;font-size:1.08em}
+
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:end}
+.hero-text{display:grid;gap:14px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2.5rem,6vw,4.4rem);line-height:.95;text-transform:uppercase;text-wrap:balance;margin:0}
+.lede{max-width:60ch;font-size:1.15rem}
+.sign{width:210px;border:3px solid var(--exit);background:var(--surface);font-family:var(--f-display);text-transform:uppercase}
+.sign-band{background:var(--exit);color:var(--surface);font-weight:700;letter-spacing:.14em;padding:6px 12px;font-size:1.1rem}
+.sign-body{display:grid;padding:10px 12px 12px;gap:2px}
+.sign-label{font-size:.85rem;letter-spacing:.16em;color:var(--muted);font-weight:600}
+.sign-num{font-size:5rem;line-height:.9;font-weight:700;font-variant-numeric:tabular-nums}
+.sign-line{font-size:.95rem;letter-spacing:.06em;font-weight:600}
+.sign-foot{border-top:1px solid var(--rule);padding:6px 12px;font-family:var(--f-mono);font-size:.7rem;text-transform:none;color:var(--muted)}
+
+/* Results strip */
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:2px solid var(--ink);border-bottom:1px solid var(--rule)}
+.stat{display:grid;gap:4px;align-content:start;padding:14px 16px 16px}
+.stat:first-child{padding-left:0}
+.stat:not(:first-child){border-left:1px solid var(--rule)}
+.stat-l{font-family:var(--f-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.stat-v{font-family:var(--f-display);font-weight:600;font-size:clamp(1.45rem,2.5vw,1.95rem);line-height:1.05;font-variant-numeric:tabular-nums}
+.stat-s{font-size:.82rem;color:var(--muted)}
+.chip{display:inline-block;width:max-content;font-family:var(--f-display);font-weight:700;font-size:1.05rem;text-transform:uppercase;letter-spacing:.08em;padding:3px 10px;border:2px solid var(--exit);color:var(--exit)}
+.chip.walk{border-color:var(--flow);color:var(--flow)}
+
+/* Working area */
+.work{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:32px;align-items:start}
+.left{display:grid;gap:28px}
+.right{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+
+.formula{background:var(--surface);border:1px solid var(--rule);padding:24px;display:grid;gap:16px}
+.eq{font-family:var(--f-math);font-size:clamp(2rem,4.4vw,3rem);display:flex;align-items:center;flex-wrap:wrap;gap:.22em;line-height:1.1}
+.eq var{font-size:1em}
+.eq .op,.eq .fn,.eq .paren{font-style:normal}
+.eq .fn{font-family:var(--f-math);margin-left:.08em}
+.eq .paren{margin:0 -.1em}
+.frac{display:inline-flex;flex-direction:column;align-items:center;font-size:.7em;line-height:1.08}
+.frac var:first-child{border-bottom:.06em solid currentColor;padding:0 .18em}
+.eq.sm{font-size:1.45rem;gap:.15em}
+.sub{font-family:var(--f-mono);font-size:.84rem;color:var(--muted);overflow-wrap:anywhere}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 20px;margin:0}
+.legend div{display:flex;gap:10px;align-items:baseline}
+.legend dt{min-width:1.2em}
+.legend dd{margin:0;font-size:.92rem}
+.words{max-width:62ch}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px 24px;border-top:1px solid var(--rule);padding-top:16px}
+.pair > div{display:grid;gap:6px;align-content:start}
+.mini-h{font-weight:600}
+.note{font-size:.86rem;color:var(--muted)}
+
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 28px}
+.ctl{display:grid;gap:2px}
+.ctl-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:600}
+.ctl output{font-family:var(--f-mono);font-size:.9rem;font-variant-numeric:tabular-nums;font-weight:500}
+.ctl .hint{font-size:.8rem;color:var(--muted)}
+input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--flow);background:transparent}
+
+.panel{background:var(--surface);border:1px solid var(--rule);padding:16px;display:grid;gap:12px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.clock{font-family:var(--f-mono);font-size:.88rem;font-variant-numeric:tabular-nums}
+.canvas-box{height:clamp(380px,62vh,620px)}
+.canvas-box canvas{display:block;width:100%;height:100%;cursor:pointer}
+.playback{display:flex;gap:12px;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:1rem;letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:var(--bg);border:0;border-radius:2px;padding:7px 14px;min-width:88px;cursor:pointer}
+.key{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--muted)}
+.sw{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-1px}
+.sw.wait{background:var(--wait)}
+.sw.flow{background:var(--flow)}
+.sw.you{border:2px solid var(--exit)}
+.sw.left{background:var(--rule)}
+.now{font-size:.9rem;font-variant-numeric:tabular-nums;min-height:2.9em}
+
+/* Charts */
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}
+.chart{margin:0;display:grid;gap:10px;align-content:start}
+.chart figcaption{display:grid;gap:2px}
+.chart .cap{font-size:.95rem}
+.chart svg{display:block;width:100%;height:auto}
+.grid{stroke:var(--rule);stroke-width:1}
+.axis{stroke:var(--muted);stroke-width:1}
+.tick{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.bar{fill:var(--flow)}
+.bar.you{fill:var(--exit)}
+.line{fill:none;stroke:var(--flow);stroke-width:2.25;stroke-linejoin:round}
+.area{fill:var(--flow);fill-opacity:.14}
+.est{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 4}
+.dot{fill:var(--exit)}
+.ann{fill:var(--exit);font-family:var(--f-body);font-size:12.5px;font-weight:600}
+.leg{fill:var(--ink);font-family:var(--f-body);font-size:12px}
+
+/* Notes */
+.notes{display:grid;gap:14px;max-width:72ch}
+.notes h2{font-family:var(--f-display);font-weight:700;font-size:1.6rem;text-transform:uppercase;margin:0;text-wrap:balance}
+.notes ul{margin:0;padding-left:1.1em;display:grid;gap:8px}
+.sources{font-size:.88rem;color:var(--muted)}
+
+@media (max-width:900px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat,.stat:first-child{padding:12px 12px 14px 0}
+  .stat:not(:first-child){border-left:0}
+  .stat{border-bottom:1px solid var(--rule)}
+  .stat:last-child{grid-column:1/-1;border-bottom:0}
+  .work{grid-template-columns:1fr}
+  .right{position:static}
+  .charts{grid-template-columns:1fr}
+}
+@media (max-width:720px){
+  .hero{grid-template-columns:1fr}
+}
+@media (max-width:520px){
+  .controls,.legend{grid-template-columns:1fr}
+  .formula{padding:18px}
+  .canvas-box{height:460px}
+}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">High-rise evacuation · stairwell merging</p>
+      <h1>Why the 51st floor never got in</h1>
+      <p class="lede">Every landing below you feeds another floor into the same stairwell. When each door merges fairly, the top floor's slice of the stair halves at every landing. The wait itself grows in a straight line, because the stair keeps moving the whole time.</p>
+    </div>
+    <aside class="sign" aria-label="Stairwell sign">
+      <div class="sign-band">Stair B</div>
+      <div class="sign-body">
+        <span class="sign-label">Floor</span>
+        <span class="sign-num" id="signFloor">51</span>
+        <span class="sign-line">No roof access</span>
+        <span class="sign-line">Exit ↓ at ground level</span>
+      </div>
+      <div class="sign-foot" id="signFoot">51 floors · 5,100 people · 0.8 people/s</div>
+    </aside>
+  </header>
+
+  <section class="stats" aria-label="Results">
+    <div class="stat"><span class="stat-l">Formula</span><span class="stat-v" id="sFormula">–</span><span class="stat-s">N × max(P/C, t)</span></div>
+    <div class="stat"><span class="stat-l">Simulated</span><span class="stat-v" id="sSim">–</span><span class="stat-s" id="sSimS">–</span></div>
+    <div class="stat"><span class="stat-l" id="sYouL">Floor 51 clears at</span><span class="stat-v" id="sYou">–</span><span class="stat-s" id="sYouS">–</span></div>
+    <div class="stat"><span class="stat-l" id="sShareL">Floor 51's slice of the stair</span><span class="stat-v" id="sShare">–</span><span class="stat-s">while every floor below is queued</span></div>
+    <div class="stat"><span class="stat-l">Bottleneck</span><span class="chip" id="sChip">Stairwell</span><span class="stat-s" id="sChipS">–</span></div>
+  </section>
+
+  <main class="work">
+    <section class="left">
+      <div class="formula" aria-labelledby="fh">
+        <p class="eyebrow" id="fh">Total evacuation time</p>
+        <div class="eq" role="img" aria-label="T is approximately N times the larger of P over C and t">
+          <var>T</var><span class="op">≈</span><var>N</var><span class="op">×</span><span class="fn">max</span><span class="paren">(</span><span class="frac"><var>P</var><var>C</var></span><span class="op">,</span><var>t</var><span class="paren">)</span>
+        </div>
+        <p class="sub" id="subst">–</p>
+        <dl class="legend">
+          <div><dt><var>N</var></dt><dd>floors sharing the stairwell</dd></div>
+          <div><dt><var>P</var></dt><dd>people per floor</dd></div>
+          <div><dt><var>C</var></dt><dd>people per second the stairwell moves</dd></div>
+          <div><dt><var>t</var></dt><dd>seconds to walk down one floor</dd></div>
+        </dl>
+        <p class="words">Each floor adds the slower of two costs. <b>P/C</b> is how long its people take to fit into the stairwell. <b>t</b> is how long one flight takes to walk. Like any pipeline, the building drains at the speed of its slowest stage. In a real high-rise P/C wins by a wide margin, so T ≈ N·P/C.</p>
+        <p class="note">Exact for this model: N·max(P/C, t) + min(P/C, t). The extra term is one floor of the faster stage.</p>
+        <div class="pair">
+          <div>
+            <p class="mini-h">Your floor's slice of the stair</p>
+            <div class="eq sm" role="img" aria-label="s of k equals C times alpha times one minus alpha to the k minus one"><var>s</var>(<var>k</var>) = <var>C</var>·<var>α</var>(1 − <var>α</var>)<sup><var>k</var>−1</sup></div>
+            <p class="note">At a zipper merge (α = ½) this is C / 2<sup>k</sup>. It halves at every landing below you.</p>
+          </div>
+          <div>
+            <p class="mini-h">When your floor is in the stair</p>
+            <div class="eq sm" role="img" aria-label="T sub k is approximately k plus one times P over C"><var>T</var><sub><var>k</var></sub> ≈ (<var>k</var> + 1)·<var>P</var>/<var>C</var></div>
+            <p class="note">Zipper merge, stairwell-bound. One more floor below you adds one P/C to your wait.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls" role="group" aria-label="Inputs">
+        <label class="ctl" for="floors">
+          <span class="ctl-h"><span>Floors <var>N</var></span><output id="floorsOut" for="floors">51</output></span>
+          <input type="range" id="floors" min="2" max="120" step="1" value="51">
+          <span class="hint">Floors above ground that use the stair</span>
+        </label>
+        <label class="ctl" for="flow">
+          <span class="ctl-h"><span>Stair flow <var>C</var></span><output id="flowOut" for="flow">0.8 /s</output></span>
+          <input type="range" id="flow" min="0.2" max="6" step="0.1" value="0.8">
+          <span class="hint">One 44″ stairwell ≈ 0.8. Two ≈ 1.6.</span>
+        </label>
+        <label class="ctl" for="ppl">
+          <span class="ctl-h"><span>People per floor <var>P</var></span><output id="pplOut" for="ppl">100</output></span>
+          <input type="range" id="ppl" min="10" max="400" step="10" value="100">
+          <span class="hint">A busy office floor holds 80–150</span>
+        </label>
+        <label class="ctl" for="walk">
+          <span class="ctl-h"><span>Walk per floor <var>t</var></span><output id="walkOut" for="walk">15 s</output></span>
+          <input type="range" id="walk" min="5" max="45" step="1" value="15">
+          <span class="hint">About 15 s on an open stair</span>
+        </label>
+        <label class="ctl" for="alpha">
+          <span class="ctl-h"><span>Floor's merge share <var>α</var></span><output id="alphaOut" for="alpha">0.50</output></span>
+          <input type="range" id="alpha" min="0.1" max="0.9" step="0.05" value="0.5">
+          <span class="hint">0.5 is a zipper. Higher favors the floor door.</span>
+        </label>
+        <label class="ctl" for="you">
+          <span class="ctl-h"><span>Your floor <var>k</var></span><output id="youOut" for="you">51</output></span>
+          <input type="range" id="you" min="1" max="51" step="1" value="51">
+          <span class="hint">Or click a floor in the building</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="right" aria-label="Live stairwell">
+      <div class="panel">
+        <div class="panel-head"><span class="eyebrow">Floor · waiting line · stair · people waiting</span><span class="clock" id="clock">0:00:00</span></div>
+        <div class="canvas-box" id="cbox"><canvas id="bldg" role="img" aria-label="Building cross-section showing people waiting on each floor and people moving in the stairwell"></canvas></div>
+        <div class="playback">
+          <button type="button" class="btn" id="play">Pause</button>
+          <input type="range" id="scrub" min="0" max="1000" step="1" value="350" aria-label="Elapsed evacuation time">
+        </div>
+        <div class="key">
+          <span><i class="sw wait"></i>Waiting on the floor</span>
+          <span><i class="sw left"></i>Already left the floor</span>
+          <span><i class="sw flow"></i>In the stairwell</span>
+          <span><i class="sw you"></i>Your floor</span>
+        </div>
+        <p class="now" id="youNow"></p>
+      </div>
+    </section>
+  </main>
+
+  <section class="charts">
+    <figure class="chart">
+      <figcaption><span class="eyebrow">The slice is exponential</span><span class="cap">Each floor's share of the stairwell while every floor is still queued (log scale)</span></figcaption>
+      <svg id="chartShare" role="img" aria-label="Bar chart of stairwell share by floor on a log scale"></svg>
+    </figure>
+    <figure class="chart">
+      <figcaption><span class="eyebrow">The wait is linear</span><span class="cap">Simulated time until each floor has fully entered the stairwell</span></figcaption>
+      <svg id="chartWait" role="img" aria-label="Line chart of time until each floor is in the stairwell"></svg>
+    </figure>
+  </section>
+
+  <section class="notes">
+    <h2>What the model assumes</h2>
+    <ul>
+      <li>Everyone starts at once, and every stairwell is lumped into one flow <var>C</var>. Two 44″ stairs at about 0.8 people/s each give C ≈ 1.6.</li>
+      <li>The simulation is a cell-transmission model (Daganzo, 1994–95) with one stair cell per floor. Each landing merges its floor into the stair at share α. A jammed flight holds up to 2.5·C·t people.</li>
+      <li>Door position moves α. Galea et al. (2008) saw the floor favored, roughly 60:40, when its door sits next to the incoming flight. Field studies average close to 50:50.</li>
+      <li>Left out: firefighters climbing against the flow, fatigue over 50 flights, people who leave late, and phased evacuation, which exists to prevent this exact pileup.</li>
+    </ul>
+    <p class="sources">Sources: <a href="https://fseg.gre.ac.uk/HEED/publications/JFE-095092-revised.pdf">Galea, Sharp &amp; Lawrence 2008</a> · <a href="https://onlinelibrary.wiley.com/doi/10.1002/fam.1091">Boyce et al. 2012</a> · <a href="https://d39d3mj7qio96p.cloudfront.net/media/documents/SR251_Emergency_egress_-_Merging_flows_at_floor_stairway_interfaces.pdf">BRANZ SR 251</a> · <a href="https://publications.iafss.org/publications/fss/1/497/view/fss_1-497.pdf">Pauls, via IAFSS</a></p>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+  const DISP = "'Barlow Condensed', 'Arial Narrow', sans-serif";
+  const PLAY_SECONDS = 18;
+  const SVG = 'http://www.w3.org/2000/svg';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const fmtInt = v => Math.round(v).toLocaleString('en-US');
+  const r1 = v => (Math.round(v * 10) / 10).toLocaleString('en-US');
+  const SUP = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻' };
+  const sup = n => String(n).split('').map(ch => SUP[ch] || ch).join('');
+  const mid = (x, y, z) => Math.max(Math.min(x, y), Math.min(Math.max(x, y), z));
+
+  function human(s) {
+    if (!isFinite(s)) return '–';
+    if (s < 90) return `${Math.round(s)} s`;
+    const m = s / 60;
+    if (m < 60) return `${m < 10 ? m.toFixed(1) : Math.round(m)} min`;
+    let h = Math.floor(m / 60), mm = Math.round(m - h * 60);
+    if (mm === 60) { h += 1; mm = 0; }
+    return `${h} h ${mm} min`;
+  }
+  function clock(s) {
+    s = Math.max(0, Math.round(s));
+    const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    return `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}`;
+  }
+  function logShare(i, N, a) {
+    return i < N ? Math.log10(a) + (i - 1) * Math.log10(1 - a) : (N - 1) * Math.log10(1 - a);
+  }
+  function oneIn(l) {
+    const e = -l;
+    if (e < 3) return `1 in ${fmtInt(Math.pow(10, e))}`;
+    const names = [[3, 'thousand'], [6, 'million'], [9, 'billion'], [12, 'trillion'], [15, 'quadrillion'], [18, 'quintillion']];
+    if (e < 21) {
+      const [p, nm] = names.filter(([p]) => e >= p).pop();
+      const v = Math.pow(10, e - p);
+      return `1 in ${v < 10 ? v.toFixed(1) : Math.round(v)} ${nm}`;
+    }
+    return `1 in 10${sup(Math.floor(e))}`;
+  }
+  function niceStep(max, count) {
+    const raw = max / count, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+  }
+  function floorStep(N) {
+    return [1, 2, 5, 10, 20, 25, 50].find(s => N / s <= 10) || 50;
+  }
+
+  function read() {
+    return { N: +$('floors').value, C: +$('flow').value, P: +$('ppl').value, t: +$('walk').value, a: +$('alpha').value, k: +$('you').value };
+  }
+
+  // Cell-transmission model: cell i is the flight below floor i; time step = one floor of walking.
+  function simulate({ N, C, P, t, a }) {
+    const dt = t, Q = C * dt, J = 2.5 * Q;
+    const q = new Float64Array(N + 2), n = new Float64Array(N + 2);
+    const ys = new Float64Array(N + 2), yf = new Float64Array(N + 2);
+    for (let i = 1; i <= N; i++) q[i] = P;
+    const off = new Float64Array(N + 1).fill(NaN);
+    const total = N * P, eps = 1e-6 * P;
+    const est = N * Math.max(P / C, t) + Math.min(P / C, t);
+    const stride = Math.max(1, Math.ceil(est / dt / 700));
+    const frames = [];
+    let out = 0, time = 0, step = 0, rem = total;
+    const snap = () => frames.push({ time, out, q: Float64Array.from(q.subarray(1, N + 1)), n: Float32Array.from(n.subarray(1, N + 1)) });
+    snap();
+    while (rem > 1e-6 * total && step < 400000) {
+      const exit = Math.min(n[1], Q);
+      for (let i = 1; i <= N; i++) {
+        const R = Math.max(0, Math.min(Q, J - n[i]));
+        const S = i < N ? Math.min(n[i + 1], Q) : 0;
+        const F = Math.min(q[i], Q);
+        if (S + F <= R) { ys[i] = S; yf[i] = F; }
+        else { yf[i] = mid(F, R - S, a * R); ys[i] = mid(S, R - F, (1 - a) * R); }
+      }
+      rem = 0;
+      for (let i = 1; i <= N; i++) {
+        n[i] += ys[i] + yf[i] - (i === 1 ? exit : ys[i - 1]);
+        q[i] -= yf[i];
+        if (q[i] <= eps) { if (Number.isNaN(off[i])) off[i] = time + dt; q[i] = 0; }
+        rem += q[i] + n[i];
+      }
+      out += exit; time += dt; step++;
+      if (step % stride === 0) snap();
+    }
+    if (frames[frames.length - 1].time !== time) snap();
+    return { T: time, off, frames, J, total };
+  }
+
+  const state = { p: null, sim: null, playT: 0, playing: !reduce, buf: null, geo: null, youAtTop: true };
+
+  function frameAt(T) {
+    const fr = state.sim.frames, N = state.p.N;
+    if (!state.buf || state.buf.q.length !== N) state.buf = { q: new Float64Array(N), n: new Float32Array(N), out: 0 };
+    const b = state.buf;
+    const copy = f => { b.q.set(f.q); b.n.set(f.n); b.out = f.out; return b; };
+    if (T <= fr[0].time) return copy(fr[0]);
+    let lo = 0, hi = fr.length - 1;
+    if (T >= fr[hi].time) return copy(fr[hi]);
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (fr[m].time <= T) lo = m; else hi = m; }
+    const A = fr[lo], B = fr[hi], u = (T - A.time) / (B.time - A.time);
+    for (let i = 0; i < N; i++) { b.q[i] = A.q[i] + (B.q[i] - A.q[i]) * u; b.n[i] = A.n[i] + (B.n[i] - A.n[i]) * u; }
+    b.out = A.out + (B.out - A.out) * u;
+    return b;
+  }
+
+  function rateAt(T, k) {
+    const fr = state.sim.frames;
+    let lo = 0, hi = fr.length - 1;
+    if (hi === 0) return 0;
+    if (T >= fr[hi].time) lo = hi - 1;
+    else while (hi - lo > 1) { const m = (lo + hi) >> 1; if (fr[m].time <= T) lo = m; else hi = m; }
+    hi = lo + 1;
+    return Math.max(0, (fr[lo].q[k - 1] - fr[hi].q[k - 1]) / (fr[hi].time - fr[lo].time));
+  }
+
+  function perPerson(rate) {
+    if (rate * state.p.t < 1e-12) return 'effectively zero';
+    const s = 1 / rate;
+    if (s < 1.5) return `${r1(rate)} people per second`;
+    const units = [[60, 'second', 1], [3600, 'minute', 60], [86400, 'hour', 3600], [86400 * 365, 'day', 86400], [Infinity, 'year', 86400 * 365]];
+    for (const [lim, name, div] of units) {
+      if (s >= lim) continue;
+      const v = s / div;
+      if (v >= 1e6) return `1 person every 10${sup(Math.floor(Math.log10(v)))} ${name}s`;
+      return `1 person every ${v < 10 ? r1(v) : fmtInt(v)} ${name}${Math.round(v * 10) === 10 ? '' : 's'}`;
+    }
+  }
+
+  function tokens() {
+    const css = getComputedStyle(document.documentElement);
+    const g = k => css.getPropertyValue(k).trim();
+    return { ink: g('--ink'), muted: g('--muted'), rule: g('--rule'), exit: g('--exit'), flow: g('--flow'), wait: g('--wait') };
+  }
+
+  function drawBuilding() {
+    const cv = $('bldg'), box = $('cbox');
+    const w = box.clientWidth, h = box.clientHeight;
+    if (!w || !h) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const c = tokens();
+    const { N, P, k } = state.p;
+    const f = frameAt(state.playT);
+    const labelW = 34, countW = 40, stairW = Math.max(44, Math.round(w * 0.18)), gap = 8;
+    const top = 4, exitH = 34, rowH = (h - top - exitH) / N;
+    const qx = labelW, sx = w - countW - stairW, qw = sx - gap - qx;
+    state.geo = { top, rowH, N };
+
+    ctx.globalAlpha = 0.45; ctx.fillStyle = c.rule; ctx.fillRect(sx, top, stairW, N * rowH); ctx.globalAlpha = 1;
+    const every = rowH >= 10 ? 1 : rowH >= 6 ? 5 : 10;
+    ctx.font = `${Math.round(Math.min(11, Math.max(9, rowH * 0.7)))}px ${MONO}`;
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+    for (let i = 1; i <= N; i++) {
+      const y = top + (N - i) * rowH;
+      if (rowH >= 6) { ctx.fillStyle = c.rule; ctx.fillRect(qx, y + rowH - 1, qw, 1); }
+      const qv = f.q[i - 1] / P, bh = Math.max(1, rowH * 0.6), by = y + (rowH - bh) / 2;
+      ctx.fillStyle = c.rule; ctx.fillRect(qx, by, qw, bh);
+      if (qv > 0.002) {
+        const bw = Math.max(1, qw * Math.min(1, qv));
+        ctx.fillStyle = c.wait; ctx.fillRect(qx + qw - bw, by, bw, bh);
+      }
+      const nv = Math.min(1, f.n[i - 1] / state.sim.J);
+      if (nv > 0.003) {
+        ctx.globalAlpha = 0.18 + 0.82 * nv; ctx.fillStyle = c.flow;
+        ctx.fillRect(sx + 3, y + 0.5, stairW - 6, Math.max(1, rowH - 1));
+        ctx.globalAlpha = 1;
+      }
+      if (i !== k && (i % every === 0 || i === 1)) {
+        ctx.fillStyle = c.muted; ctx.fillText(String(i), labelW - 8, y + rowH / 2);
+        ctx.fillStyle = f.q[i - 1] >= 0.5 ? c.ink : c.muted; ctx.fillText(fmtInt(f.q[i - 1]), w - 4, y + rowH / 2);
+      }
+    }
+
+    const yy = top + (N - k) * rowH, rh = Math.max(rowH, 3);
+    ctx.strokeStyle = c.exit; ctx.lineWidth = 2;
+    ctx.strokeRect(qx - 2, yy + (rowH - rh) / 2, w - qx, rh);
+    ctx.fillStyle = c.exit; ctx.font = `600 11px ${MONO}`; ctx.textAlign = 'right';
+    const ly = Math.min(Math.max(yy + rowH / 2, top + 6), top + N * rowH - 6);
+    ctx.fillText(String(k), labelW - 8, ly);
+    ctx.fillText(fmtInt(f.q[k - 1]), w - 4, ly);
+
+    const ey = top + N * rowH;
+    ctx.fillStyle = c.ink; ctx.fillRect(qx, ey + 2, w - qx - 2, 2);
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    ctx.font = `700 15px ${DISP}`; ctx.fillStyle = c.exit;
+    ctx.fillText('EXIT ↓', qx, ey + 24);
+    ctx.font = `12px ${MONO}`; ctx.fillStyle = c.ink; ctx.textAlign = 'right';
+    ctx.fillText(`${fmtInt(f.out)} of ${fmtInt(state.sim.total)} out`, w - 4, ey + 23);
+  }
+
+  function svgEl(tag, attrs, parent, text) {
+    const e = document.createElementNS(SVG, tag);
+    for (const key in attrs) e.setAttribute(key, attrs[key]);
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  function drawShare() {
+    const svg = $('chartShare');
+    const W = Math.max(300, svg.parentElement.clientWidth || 560), H = 270;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.replaceChildren();
+    const m = { l: 54, r: 12, t: 26, b: 34 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const { N, a, k } = state.p;
+    const logs = []; for (let i = 1; i <= N; i++) logs.push(logShare(i, N, a));
+    let lo = Math.min(-1, Math.floor(Math.min(...logs)));
+    const step = [1, 2, 3, 5, 10, 15, 20, 25, 30, 50].find(s => -lo / s <= 5) || 50;
+    lo = -Math.ceil(-lo / step) * step;
+    const y = v => m.t + (-v / -lo) * ph;
+    for (let d = 0; d >= lo; d -= step) {
+      svgEl('line', { x1: m.l, x2: m.l + pw, y1: y(d), y2: y(d), class: 'grid' }, svg);
+      const lab = d === 0 ? '100%' : d === -1 ? '10%' : d === -2 ? '1%' : `10${sup(d)}`;
+      svgEl('text', { x: m.l - 8, y: y(d) + 4, 'text-anchor': 'end', class: 'tick' }, svg, lab);
+    }
+    const bw = pw / N, gp = bw > 4 ? 1 : 0;
+    logs.forEach((v, i) => {
+      const yv = y(v);
+      svgEl('rect', { x: m.l + i * bw + gp / 2, y: yv, width: Math.max(0.5, bw - gp), height: Math.max(0, y(lo) - yv), class: i + 1 === k ? 'bar you' : 'bar' }, svg);
+    });
+    svgEl('line', { x1: m.l, x2: m.l + pw, y1: y(lo), y2: y(lo), class: 'axis' }, svg);
+    const fs = floorStep(N);
+    for (let i = 1; i <= N; i++) {
+      if (i !== 1 && i % fs !== 0) continue;
+      svgEl('text', { x: m.l + (i - 0.5) * bw, y: H - m.b + 16, 'text-anchor': 'middle', class: 'tick' }, svg, String(i));
+    }
+    svgEl('text', { x: m.l + pw, y: H - 4, 'text-anchor': 'end', class: 'tick' }, svg, 'floor →');
+    svgEl('text', { x: m.l + pw, y: 14, 'text-anchor': 'end', class: 'ann' }, svg, `Floor ${k}: ${oneIn(logs[k - 1])} of the stair`);
+  }
+
+  function drawWait() {
+    const svg = $('chartWait');
+    const W = Math.max(300, svg.parentElement.clientWidth || 560), H = 270;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.replaceChildren();
+    const m = { l: 54, r: 14, t: 26, b: 34 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const { N, P, C, k } = state.p, off = state.sim.off;
+    const est = i => Math.min(i + 1, N) * P / C;
+    let maxS = 0;
+    for (let i = 1; i <= N; i++) { if (isFinite(off[i])) maxS = Math.max(maxS, off[i]); maxS = Math.max(maxS, est(i)); }
+    const maxM = Math.max(maxS / 60, 0.5);
+    const st = niceStep(maxM, 5), top = Math.ceil(maxM / st) * st;
+    const x = i => m.l + (N === 1 ? 0 : (i - 1) / (N - 1)) * pw;
+    const y = minutes => m.t + ph - (minutes / top) * ph;
+    for (let v = 0; v <= top + 1e-9; v += st) {
+      svgEl('line', { x1: m.l, x2: m.l + pw, y1: y(v), y2: y(v), class: 'grid' }, svg);
+      svgEl('text', { x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end', class: 'tick' }, svg, st < 1 ? v.toFixed(1) : String(Math.round(v)));
+    }
+    svgEl('text', { x: m.l - 8, y: 12, 'text-anchor': 'end', class: 'tick' }, svg, 'min');
+    let line = '', area = `M${x(1)},${y(0)}`;
+    for (let i = 1; i <= N; i++) {
+      if (!isFinite(off[i])) continue;
+      const px = x(i), py = y(off[i] / 60);
+      line += `${line ? 'L' : 'M'}${px},${py}`; area += `L${px},${py}`;
+    }
+    area += `L${x(N)},${y(0)}Z`;
+    svgEl('path', { d: area, class: 'area' }, svg);
+    let ed = '';
+    for (let i = 1; i <= N; i++) ed += `${i === 1 ? 'M' : 'L'}${x(i)},${y(est(i) / 60)}`;
+    svgEl('path', { d: ed, class: 'est' }, svg);
+    svgEl('path', { d: line, class: 'line' }, svg);
+    svgEl('line', { x1: m.l, x2: m.l + pw, y1: y(0), y2: y(0), class: 'axis' }, svg);
+    const fs = floorStep(N);
+    for (let i = 1; i <= N; i++) {
+      if (i !== 1 && i % fs !== 0) continue;
+      svgEl('text', { x: x(i), y: H - m.b + 16, 'text-anchor': 'middle', class: 'tick' }, svg, String(i));
+    }
+    svgEl('text', { x: m.l + pw, y: H - 4, 'text-anchor': 'end', class: 'tick' }, svg, 'floor →');
+    const lg = svgEl('g', { transform: `translate(${m.l + 10},${m.t + 6})` }, svg);
+    svgEl('line', { x1: 0, x2: 22, y1: 0, y2: 0, class: 'line' }, lg);
+    svgEl('text', { x: 28, y: 4, class: 'leg' }, lg, 'Simulated');
+    svgEl('line', { x1: 0, x2: 22, y1: 18, y2: 18, class: 'est' }, lg);
+    svgEl('text', { x: 28, y: 22, class: 'leg' }, lg, 'Zipper estimate (k+1)·P/C');
+    if (isFinite(off[k])) {
+      const px = x(k), py = y(off[k] / 60);
+      svgEl('circle', { cx: px, cy: py, r: 4.5, class: 'dot' }, svg);
+      const right = px > m.l + pw * 0.6;
+      svgEl('text', { x: px + (right ? -9 : 9), y: Math.max(m.t + 40, py - 8), 'text-anchor': right ? 'end' : 'start', class: 'ann' }, svg, `Floor ${k}: ${human(off[k])}`);
+    }
+  }
+
+  function updateText() {
+    const { N, C, P, t, a, k } = state.p, sim = state.sim;
+    const pc = P / C, mx = Math.max(pc, t), formula = N * mx;
+    $('floorsOut').textContent = N;
+    $('flowOut').textContent = `${C.toFixed(1)} /s`;
+    $('pplOut').textContent = P;
+    $('walkOut').textContent = `${t} s`;
+    $('alphaOut').textContent = a === 0.5 ? '0.50 · zipper' : a.toFixed(2);
+    $('youOut').textContent = k;
+    $('signFloor').textContent = k;
+    $('signFoot').textContent = `${N} floors · ${fmtInt(N * P)} people · ${C.toFixed(1)} people/s`;
+    $('subst').textContent = `${N} × max(${P} / ${C.toFixed(1)}, ${t}) = ${N} × ${r1(mx)} s = ${fmtInt(formula)} s ≈ ${human(formula)}`;
+    $('sFormula').textContent = human(formula);
+    $('sSim').textContent = human(sim.T);
+    const d = (sim.T - formula) / formula * 100;
+    $('sSimS').textContent = `${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(1)}% vs formula`;
+    $('sYouL').textContent = `Floor ${k} clears at`;
+    $('sYou').textContent = human(sim.off[k]);
+    $('sYouS').textContent = `Zipper estimate ${human(Math.min(k + 1, N) * pc)}`;
+    $('sShareL').textContent = `Floor ${k}'s slice of the stair`;
+    $('sShare').textContent = oneIn(logShare(k, N, a));
+    const stairBound = pc >= t, chip = $('sChip');
+    chip.textContent = stairBound ? 'Stairwell' : 'Walking';
+    chip.classList.toggle('walk', !stairBound);
+    $('sChipS').textContent = `${r1(pc)} s to load a floor, ${t} s to walk one`;
+  }
+
+  function render() {
+    if (!state.sim) return;
+    drawBuilding();
+    const { k, P } = state.p, waiting = frameAt(state.playT).q[k - 1], cleared = state.sim.off[k];
+    $('youNow').textContent = isFinite(cleared) && state.playT >= cleared
+      ? `Floor ${k} is empty. Its last person reached the stair at ${clock(cleared)}.`
+      : `Floor ${k} right now: ${fmtInt(P - waiting)} have left, ${fmtInt(waiting)} waiting at the stair door. Current rate: ${perPerson(rateAt(state.playT, k))}.`;
+    $('clock').textContent = `${clock(state.playT)} / ${clock(state.sim.T)}`;
+    $('scrub').value = Math.round(state.playT / state.sim.T * 1000);
+    $('play').textContent = state.playing ? 'Pause' : state.playT >= state.sim.T ? 'Replay' : 'Play';
+  }
+  function drawCharts() { if (state.sim) { drawShare(); drawWait(); } }
+
+  function recompute() {
+    const frac = state.sim ? state.playT / state.sim.T : 0.35;
+    state.p = read();
+    state.sim = simulate(state.p);
+    state.playT = Math.min(1, frac) * state.sim.T;
+    updateText(); drawCharts(); render();
+  }
+
+  let pending = false;
+  function schedule() { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; recompute(); }); }
+
+  function syncYou(source) {
+    const you = $('you'), N = +$('floors').value;
+    if (source === 'you') state.youAtTop = +you.value === N;
+    you.max = N;
+    if (state.youAtTop || +you.value > N) you.value = N;
+  }
+
+  ['floors', 'flow', 'ppl', 'walk', 'alpha', 'you'].forEach(id =>
+    $(id).addEventListener('input', () => { syncYou(id); schedule(); }));
+
+  let last = null;
+  function tick(ts) {
+    if (!state.playing) { last = null; return; }
+    if (last != null) state.playT = Math.min(state.sim.T, state.playT + (ts - last) / 1000 * state.sim.T / PLAY_SECONDS);
+    last = ts;
+    if (state.playT >= state.sim.T) state.playing = false;
+    render();
+    if (state.playing) requestAnimationFrame(tick);
+  }
+  function play() { state.playing = true; last = null; requestAnimationFrame(tick); }
+
+  $('play').addEventListener('click', () => {
+    if (state.playing) { state.playing = false; render(); return; }
+    if (state.playT >= state.sim.T) state.playT = 0;
+    play();
+  });
+  $('scrub').addEventListener('input', e => {
+    state.playing = false;
+    state.playT = (+e.target.value / 1000) * state.sim.T;
+    render();
+  });
+  $('bldg').addEventListener('click', e => {
+    if (!state.geo) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const { top, rowH, N } = state.geo;
+    const i = Math.max(1, Math.min(N, N - Math.floor((e.clientY - r.top - top) / rowH)));
+    $('you').value = i; state.youAtTop = i === N;
+    schedule();
+  });
+
+  new ResizeObserver(() => render()).observe($('cbox'));
+  new ResizeObserver(() => drawCharts()).observe(document.querySelector('.charts'));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { render(); drawCharts(); });
+
+  syncYou('floors');
+  recompute();
+  if (state.playing) play();
+})();
+</script>
+
+</html>
